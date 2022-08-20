@@ -1,0 +1,23 @@
+# Start with Google style
+
+BasedOnStyle: Google
+
+# My own changes
+
+SeparateDefinitionBlocks: Always
+
+AllowShortBlocksOnASingleLine: Empty
+
+DerivePointerAlignment: false
+PointerAlignment: Right
+
+AllowShortFunctionsOnASingleLine: Empty
+
+AlignAfterOpenBracket: AlwaysBreak
+
+UseTab: ForContinuationAndIndentation
+IndentWidth: 2
+TabWidth: 2
+
+# Based on Linux Kernel recommendation
+ColumnLimit: 100
