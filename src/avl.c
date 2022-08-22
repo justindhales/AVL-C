@@ -8,8 +8,8 @@
 #include <stdlib.h>
 
 struct avl_node {
-	void *value;
-	void *data;
+	void const *value;
+	void const *data;
 	struct avl_node *left;
 	struct avl_node *right;
 	int8_t balance;
@@ -17,12 +17,23 @@ struct avl_node {
 
 struct avl_tree {
 	struct avl_node *root;
-	int (*cmp_func)(void *new_value, void *node_value);
+	int (*cmp_func)(void const *new_value, void const *node_value);
 };
 
 enum weight { LEFT = -1, BALANCED = 0, RIGHT = 1 };
 
-void avl_tree_init(struct avl_tree *tree, int (*cmp_func)(void *new_value, void *node_value)) {
+void const *avl_node_value(struct avl_node const *node) {
+	assert(node != NULL);
+	return node->value;
+}
+
+void const *avl_node_data(struct avl_node const *node) {
+	assert(node != NULL);
+	return node->data;
+}
+
+void avl_tree_init(
+		struct avl_tree *tree, int (*cmp_func)(void const *new_value, void const *node_value)) {
 	assert(tree != NULL);
 	assert(cmp_func != NULL);
 
@@ -111,8 +122,8 @@ void _balance_right(struct avl_node **node, bool *decrease) {
 }
 
 int _add_helper(
-		struct avl_node **root, void *value, void *data,
-		int (*cmp_func)(void *new_value, void *node_value), bool *increase) {
+		struct avl_node **root, void const *value, void const *data,
+		int (*cmp_func)(void const *new_value, void const *node_value), bool *increase) {
 	assert(root != NULL);
 	assert(value != NULL);
 	assert(data != NULL);
@@ -195,7 +206,7 @@ int _add_helper(
 	}
 }
 
-int avl_tree_add(struct avl_tree *tree, void *new_value, void *new_data) {
+int avl_tree_add(struct avl_tree *tree, void const *new_value, void const *new_data) {
 	assert(tree != NULL);
 	assert(new_value != NULL);
 	assert(new_data != NULL);
@@ -205,11 +216,11 @@ int avl_tree_add(struct avl_tree *tree, void *new_value, void *new_data) {
 }
 
 int _get_helper(
-		struct avl_node *node, void *value, void **data,
-		int (*cmp_func)(void *new_value, void *node_value)) {
+		struct avl_node *node, void const *value, void const **data,
+		int (*cmp_func)(void const *new_value, void const *node_value)) {
 	assert(value != NULL);
 	assert(data != NULL);
-	assert(*data == NULL);
+	// assert(*data == NULL);
 	assert(cmp_func != NULL);
 
 	if (node == NULL) {
@@ -232,24 +243,22 @@ int _get_helper(
 	}
 }
 
-int avl_tree_get(struct avl_tree *tree, void *search_value, void **node_data) {
+int avl_tree_get(struct avl_tree const *tree, void const *search_value, void const **node_data) {
 	assert(tree != NULL);
 	assert(search_value != NULL);
 	assert(node_data != NULL);
-	assert(*node_data == NULL);
 
 	return _get_helper((tree)->root, search_value, node_data, tree->cmp_func);
 }
 
 int _remove_helper(
-		struct avl_node **root, void *search_value, void **node_value, void **node_data,
-		int (*cmp_func)(void *new_value, void *node_value), bool *decrease) {
+		struct avl_node **root, void const *search_value, void const **node_value,
+		void const **node_data, int (*cmp_func)(void const *new_value, void const *node_value),
+		bool *decrease) {
 	assert(root != NULL);
 	assert(search_value != NULL);
 	assert(node_value != NULL);
-	assert(*node_data == NULL);
 	assert(node_data != NULL);
-	assert(*node_data == NULL);
 	assert(cmp_func != NULL);
 	assert(decrease != NULL);
 
@@ -333,8 +342,8 @@ int _remove_helper(
 				for (predecessor = (*root)->left; predecessor->right != NULL;
 						 predecessor = predecessor->right) {}
 
-				void *predecessor_value = NULL;
-				void *predecessor_data = NULL;
+				void const *predecessor_value;
+				void const *predecessor_data;
 				// Now remove the inorder predecessor from the tree
 				did_remove = _remove_helper(
 						&(*root)->left, predecessor->value, &predecessor_value, &predecessor_data, cmp_func,
@@ -370,15 +379,71 @@ int _remove_helper(
 }
 
 int avl_tree_remove(
-		struct avl_tree *tree, void *search_value, void **node_value, void **node_data) {
+		struct avl_tree *tree, void const *search_value, void const **node_value,
+		void const **node_data) {
 	assert(tree != NULL);
 	assert(search_value != NULL);
 	assert(node_value != NULL);
-	assert(*node_value == NULL);
 	assert(node_data != NULL);
-	assert(*node_data == NULL);
 
 	bool decrease = false;
 	return _remove_helper(
 			&tree->root, search_value, node_value, node_data, tree->cmp_func, &decrease);
+}
+
+int _traverse_helper(
+		struct avl_node *root, int (*preorder_func)(struct avl_node const *node, void *arg),
+		int (*inorder_func)(struct avl_node const *node, void *arg),
+		int (*postorder_func)(struct avl_node const *node, void *arg), void *arg) {
+	if (root == NULL) {
+		return 0;
+	}
+
+	int rc;
+
+	// Apply pre-order function on node
+	if (preorder_func != NULL) {
+		rc = preorder_func(root, arg);
+		if (rc <= -1) {
+			return rc;
+		}
+	}
+
+	// Go down the left branch
+	rc = _traverse_helper(root->left, preorder_func, inorder_func, postorder_func, arg);
+	if (rc <= -1) {
+		return rc;
+	}
+
+	// Apply in-order function on node
+	if (inorder_func != NULL) {
+		rc = inorder_func(root, arg);
+		if (rc <= -1) {
+			return rc;
+		}
+	}
+
+	// Go down the right branch
+	rc = _traverse_helper(root->right, preorder_func, inorder_func, postorder_func, arg);
+	if (rc <= -1) {
+		return rc;
+	}
+
+	// Apply post-order function on node
+	if (postorder_func != NULL) {
+		rc = postorder_func(root, arg);
+		if (rc <= -1) {
+			return rc;
+		}
+	}
+
+	return 0;
+}
+
+int avl_tree_traverse(
+		struct avl_tree const *tree, int (*preorder_func)(struct avl_node const *node, void *arg),
+		int (*inorder_func)(struct avl_node const *node, void *arg),
+		int (*postorder_func)(struct avl_node const *node, void *arg), void *arg) {
+	assert(tree != NULL);
+	return _traverse_helper(tree->root, preorder_func, inorder_func, postorder_func, arg);
 }
