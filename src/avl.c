@@ -20,6 +20,8 @@ struct avl_tree {
 	int (*cmp_func)(void *new_value, void *node_value);
 };
 
+enum weight { LEFT = -1, BALANCED = 0, RIGHT = 1 };
+
 void avl_tree_init(struct avl_tree *tree, int (*cmp_func)(void *new_value, void *node_value)) {
 	assert(tree != NULL);
 	assert(cmp_func != NULL);
@@ -32,19 +34,17 @@ void _rotate_left(struct avl_node **root) {
 	assert(root != NULL);
 	assert(*root != NULL);
 	assert((*root)->right != NULL);
+	// Should rotate left only when the root node is balanced toward the right
+	assert((*root)->balance >= RIGHT);
 
-	// The prior_right node will become the new root
+	// The prior_right node will eventually be saved in root's current position
 	struct avl_node *prior_right = (*root)->right;
 
 	// Everything to the left of prior_right is attached to root's right
 	(*root)->right = prior_right->left;
 
 	// Calculate root's new balance assuming the tree has been regularly balanced
-	if ((*root)->right != NULL) {
-		(*root)->balance += LEFT;
-	} else {
-		(*root)->balance += 2 * LEFT;
-	}
+	(*root)->balance = (LEFT * ((*root)->left != NULL)) + (RIGHT * ((*root)->right != NULL));
 
 	// prior_right's left is now the old root
 	prior_right->left = *root;
@@ -58,19 +58,17 @@ void _rotate_right(struct avl_node **root) {
 	assert(root != NULL);
 	assert(*root != NULL);
 	assert((*root)->left != NULL);
+	// Should rotate right only when the root node is balanced toward the left
+	assert((*root)->balance <= LEFT);
 
-	// The prior_left node will become the new root
+	// The prior_left node will eventually be saved in root's current position
 	struct avl_node *prior_left = (*root)->left;
 
 	// Everything to the right of prior_left is attached to root's left
 	(*root)->left = prior_left->right;
 
 	// Calculate root's new balance assuming the tree has been regularly balanced
-	if ((*root)->left != NULL) {
-		(*root)->balance += RIGHT;
-	} else {
-		(*root)->balance += 2 * RIGHT;
-	}
+	(*root)->balance = (LEFT * ((*root)->left != NULL)) + (RIGHT * ((*root)->right != NULL));
 
 	// prior_left's left is now the old root
 	prior_left->left = *root;
@@ -83,7 +81,7 @@ void _rotate_right(struct avl_node **root) {
 void _balance_left(struct avl_node **node, bool *decrease) {
 	assert(node != NULL);
 	assert(*node != NULL);
-	assert(decrease != NULL);
+	// assert(decrease != NULL);
 	assert((*node)->left != NULL);
 
 	if ((*node)->left->balance == RIGHT) {
@@ -99,7 +97,7 @@ void _balance_left(struct avl_node **node, bool *decrease) {
 void _balance_right(struct avl_node **node, bool *decrease) {
 	assert(node != NULL);
 	assert(*node != NULL);
-	assert(decrease != NULL);
+	// assert(decrease != NULL);
 	assert((*node)->right != NULL);
 
 	if ((*node)->right->balance == LEFT) {
@@ -113,12 +111,12 @@ void _balance_right(struct avl_node **node, bool *decrease) {
 }
 
 int _add_helper(
-		struct avl_node **root, void *value, int (*cmp_func)(void *new_value, void *node_value),
-		void *data, bool *increase) {
+		struct avl_node **root, void *value, void *data,
+		int (*cmp_func)(void *new_value, void *node_value), bool *increase) {
 	assert(root != NULL);
 	assert(value != NULL);
-	assert(cmp_func != NULL);
 	assert(data != NULL);
+	assert(cmp_func != NULL);
 	assert(increase != NULL);
 
 	if (*root == NULL) {
@@ -144,7 +142,7 @@ int _add_helper(
 		int did_add;
 		if (direction < 0) {
 			// Add on left
-			did_add = _add_helper(&(*root)->left, value, cmp_func, data, increase);
+			did_add = _add_helper(&(*root)->left, value, data, cmp_func, increase);
 			if (did_add < 0) {
 				fprintf(stderr, "avl_tree_add_helper() error: %d\n", did_add);
 				return did_add;
@@ -168,7 +166,7 @@ int _add_helper(
 			return did_add;
 		} else if (0 < direction) {
 			// Add on right
-			did_add = _add_helper(&(*root)->right, value, cmp_func, data, increase);
+			did_add = _add_helper(&(*root)->right, value, data, cmp_func, increase);
 			if (did_add < 0) {
 				fprintf(stderr, "avl_tree_add_helper() error: %d\n", did_add);
 				return did_add;
@@ -197,22 +195,22 @@ int _add_helper(
 	}
 }
 
-int avl_tree_add(struct avl_tree *tree, void *value, void *data) {
+int avl_tree_add(struct avl_tree *tree, void *new_value, void *new_data) {
 	assert(tree != NULL);
-	assert(value != NULL);
-	assert(data != NULL);
+	assert(new_value != NULL);
+	assert(new_data != NULL);
 
 	bool increase = true;
-	return _add_helper(&(tree->root), value, tree->cmp_func, data, &increase);
+	return _add_helper(&(tree->root), new_value, new_data, tree->cmp_func, &increase);
 }
 
 int _get_helper(
-		struct avl_node *node, void *value, int (*cmp_func)(void *new_value, void *node_value),
-		void **data) {
+		struct avl_node *node, void *value, void **data,
+		int (*cmp_func)(void *new_value, void *node_value)) {
 	assert(value != NULL);
-	assert(cmp_func != NULL);
 	assert(data != NULL);
 	assert(*data == NULL);
+	assert(cmp_func != NULL);
 
 	if (node == NULL) {
 		// We didn't find the node
@@ -222,10 +220,10 @@ int _get_helper(
 
 		if (direction < 0) {
 			// Search left
-			return _get_helper(node->left, value, cmp_func, data);
+			return _get_helper(node->left, value, data, cmp_func);
 		} else if (0 < direction) {
 			// Search right
-			return _get_helper(node->right, value, cmp_func, data);
+			return _get_helper(node->right, value, data, cmp_func);
 		} else {
 			// We've found it
 			*data = node->data;
@@ -234,36 +232,39 @@ int _get_helper(
 	}
 }
 
-int avl_tree_get(struct avl_tree *tree, void *value, void **data) {
+int avl_tree_get(struct avl_tree *tree, void *search_value, void **node_data) {
 	assert(tree != NULL);
-	assert(value != NULL);
-	assert(data != NULL);
-	assert(*data == NULL);
+	assert(search_value != NULL);
+	assert(node_data != NULL);
+	assert(*node_data == NULL);
 
-	return _get_helper((tree)->root, value, tree->cmp_func, data);
+	return _get_helper((tree)->root, search_value, node_data, tree->cmp_func);
 }
 
 int _remove_helper(
-		struct avl_node **root, void *value, int (*cmp_func)(void *new_value, void *node_value),
-		void **data, bool *decrease) {
+		struct avl_node **root, void *search_value, void **node_value, void **node_data,
+		int (*cmp_func)(void *new_value, void *node_value), bool *decrease) {
 	assert(root != NULL);
-	assert(value != NULL);
+	assert(search_value != NULL);
+	assert(node_value != NULL);
+	assert(*node_data == NULL);
+	assert(node_data != NULL);
+	assert(*node_data == NULL);
 	assert(cmp_func != NULL);
-	assert(data != NULL);
-	assert(*data == NULL);
 	assert(decrease != NULL);
 
 	if (*root == NULL) {
 		// We didn't find the node
 		return false;
 	} else {
-		int direction = cmp_func(value, (*root)->value);
+		int direction = cmp_func(search_value, (*root)->value);
 
 		int did_remove;
 
 		if (direction < 0) {
 			// Remove from left side
-			did_remove = _remove_helper(&(*root)->left, value, cmp_func, data, decrease);
+			did_remove =
+					_remove_helper(&(*root)->left, search_value, node_value, node_data, cmp_func, decrease);
 
 			if (*decrease) {
 				// Since a node was removed on the left, the right side is now longer
@@ -282,7 +283,8 @@ int _remove_helper(
 			return did_remove;
 		} else if (0 < direction) {
 			// Remove from right side
-			did_remove = _remove_helper(&(*root)->right, value, cmp_func, data, decrease);
+			did_remove =
+					_remove_helper(&(*root)->right, search_value, node_value, node_data, cmp_func, decrease);
 
 			if (*decrease) {
 				// Since a node was removed on the right, the left side is now longer
@@ -304,8 +306,9 @@ int _remove_helper(
 
 			struct avl_node *old_node = *root;
 
-			// Save this node's data just in case it needs to be freed externally
-			*data = (*root)->data;
+			// Save this node's value and data just in case it needs to be freed externally
+			*node_value = (*root)->value;
+			*node_data = (*root)->data;
 
 			// If the root has no left child or no children
 			if ((*root)->left == NULL) {
@@ -330,13 +333,15 @@ int _remove_helper(
 				for (predecessor = (*root)->left; predecessor->right != NULL;
 						 predecessor = predecessor->right) {}
 
-				void *predecessor_data;
-
+				void *predecessor_value = NULL;
+				void *predecessor_data = NULL;
 				// Now remove the inorder predecessor from the tree
 				did_remove = _remove_helper(
-						&(*root)->left, predecessor->value, cmp_func, &predecessor_data, decrease);
+						&(*root)->left, predecessor->value, &predecessor_value, &predecessor_data, cmp_func,
+						decrease);
 
-				// Copy the data in the inorder predecessor into root
+				// Copy the value and data previously in the inorder predecessor into root
+				(*root)->value = predecessor_value;
 				(*root)->data = predecessor_data;
 
 				// Because the predecessor node was on the left, the right side of the tree is possibly
@@ -364,12 +369,16 @@ int _remove_helper(
 	}
 }
 
-int avl_tree_remove(struct avl_tree *tree, void *value, void **data) {
+int avl_tree_remove(
+		struct avl_tree *tree, void *search_value, void **node_value, void **node_data) {
 	assert(tree != NULL);
-	assert(value != NULL);
-	assert(data != NULL);
-	assert(*data == NULL);
+	assert(search_value != NULL);
+	assert(node_value != NULL);
+	assert(*node_value == NULL);
+	assert(node_data != NULL);
+	assert(*node_data == NULL);
 
 	bool decrease = false;
-	return _remove_helper(&tree->root, value, tree->cmp_func, data, &decrease);
+	return _remove_helper(
+			&tree->root, search_value, node_value, node_data, tree->cmp_func, &decrease);
 }
