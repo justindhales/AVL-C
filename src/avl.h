@@ -1,10 +1,14 @@
-#ifndef AVL_C_SRC_AVL_H
-#define AVL_C_SRC_AVL_H
+#ifndef SRC_AVL_H
+#define SRC_AVL_H
 
 #include <stdint.h>
 
 struct avl_node;
-struct avl_tree;
+
+struct avl_tree {
+	struct avl_node *root;
+	int (*cmp_func)(void const *new_value, void const *node_value);
+};
 
 void const *avl_node_value(struct avl_node const *node);
 void const *avl_node_data(struct avl_node const *node);
@@ -22,7 +26,8 @@ int avl_tree_remove(
 
 int avl_tree_traverse(
 		struct avl_tree const *tree, int (*preorder_func)(struct avl_node const *node, void *arg),
-		int (*inorder_func)(struct avl_node const *node, void *arg),
-		int (*postorder_func)(struct avl_node const *node, void *arg), void *arg);
+		void *preorder_arg, int (*inorder_func)(struct avl_node const *node, void *arg),
+		void *inorder_arg, int (*postorder_func)(struct avl_node const *node, void *arg),
+		void *postorder_arg);
 
-#endif  // AVL_C_SRC_AVL_H
+#endif  // SRC_AVL_H
