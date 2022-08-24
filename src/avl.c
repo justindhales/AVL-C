@@ -40,43 +40,15 @@ void _rotate_left(struct avl_node **root) {
 	assert(root != NULL);
 	assert(*root != NULL);
 	assert((*root)->right != NULL);
-	// Should rotate left only when the root node is balanced toward the right
-	// assert(RIGHT <= (*root)->balance);
-	// Should rotate left only when the tree is right-right or right-balanced
-	// assert(BALANCED <= (*root)->right->balance);
 
 	// The prior_right node will eventually be saved in root's current position
 	struct avl_node *prior_right = (*root)->right;
 
-	// Calculate balances first
-	// if (prior_right->balance == BALANCED) {
-	// 	(*root)->balance += LEFT;
-	// 	prior_right->balance += LEFT;
-	// } else if (RIGHT < prior_right->balance) {
-	// 	(*root)->balance = LEFT;
-	// 	prior_right->balance = BALANCED;
-	// } else if (RIGHT < (*root)->balance) {
-	// 	(*root)->balance = BALANCED;
-	// 	prior_right->balance = BALANCED;
-	// } else {
-	// 	(*root)->balance += 2 * LEFT;
-	// 	prior_right += 2 * LEFT;
-	// }
-
 	// Everything to the left of prior_right is attached to root's right
 	(*root)->right = prior_right->left;
 
-	// Calculate root's new balance assuming the tree has been regularly balanced
-	// (*root)->balance = (LEFT * ((*root)->left != NULL)) + (RIGHT * ((*root)->right != NULL));
-	// if ((((*root)->right == NULL) == ((*root)->left == NULL)) && RIGHT < (*root)->balance) {
-	// 	(*root)->balance += 2 * LEFT;
-	// } else {
-	// 	(*root)->balance += LEFT;
-	// }
-
 	// prior_right's left is now the old root
 	prior_right->left = *root;
-	// prior_right->balance += LEFT;
 
 	// prior_right is the new root
 	*root = prior_right;
@@ -86,43 +58,15 @@ void _rotate_right(struct avl_node **root) {
 	assert(root != NULL);
 	assert(*root != NULL);
 	assert((*root)->left != NULL);
-	// Should rotate right only when the root node is balanced toward the left
-	// assert((*root)->balance <= LEFT);
-	// Should rotate right only when the tree is left-left or left-balanced
-	// assert((*root)->left->balance <= BALANCED);
 
 	// The prior_left node will eventually be saved in root's current position
 	struct avl_node *prior_left = (*root)->left;
 
-	// Calculate balances first
-	// if (prior_left->balance == BALANCED) {
-	// 	(*root)->balance += RIGHT;
-	// 	prior_left->balance += RIGHT;
-	// } else if (prior_left->balance < LEFT) {
-	// 	(*root)->balance = RIGHT;
-	// 	prior_left->balance = BALANCED;
-	// } else if ((*root)->balance < LEFT) {
-	// 	(*root)->balance = BALANCED;
-	// 	prior_left->balance = BALANCED;
-	// } else {
-	// 	(*root)->balance += 2 * RIGHT;
-	// 	prior_left->balance += 2 * RIGHT;
-	// }
-
 	// Everything to the right of prior_left is attached to root's left
 	(*root)->left = prior_left->right;
 
-	// Calculate root's new balance assuming the tree has been regularly balanced
-	// (*root)->balance = (LEFT * ((*root)->left != NULL)) + (RIGHT * ((*root)->right != NULL));
-	// if ((((*root)->right == NULL) == ((*root)->left == NULL)) && (*root)->balance < LEFT) {
-	// 	(*root)->balance += 2 * RIGHT;
-	// } else {
-	// 	(*root)->balance += RIGHT;
-	// }
-
 	// prior_left's left is now the old root
 	prior_left->right = *root;
-	// prior_left->balance += RIGHT;
 
 	// prior_left is the new root
 	*root = prior_left;
@@ -267,7 +211,7 @@ int _add_helper(
 			// Add on left
 			did_add = _add_helper(&(*root)->left, value, data, cmp_func, increase);
 			if (did_add < 0) {
-				fprintf(stderr, "avl_tree_add_helper() error: %d\n", did_add);
+				fprintf(stderr, "_add_helper() error: %d\n", did_add);
 				return did_add;
 			}
 
@@ -291,7 +235,7 @@ int _add_helper(
 			// Add on right
 			did_add = _add_helper(&(*root)->right, value, data, cmp_func, increase);
 			if (did_add < 0) {
-				fprintf(stderr, "avl_tree_add_helper() error: %d\n", did_add);
+				fprintf(stderr, "_add_helper() error: %d\n", did_add);
 				return did_add;
 			}
 

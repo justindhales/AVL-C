@@ -341,6 +341,8 @@ START_TEST(test_balance_random) {
 			avl_tree_add(tree, (void *)(int64_t)rand(), (void *)(int64_t)rand());
 		}
 
+		check_tree(tree);
+
 		// Now randomly remove some nodes
 		void const *value;
 		void const *data;
