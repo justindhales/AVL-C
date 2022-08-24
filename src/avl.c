@@ -41,20 +41,42 @@ void _rotate_left(struct avl_node **root) {
 	assert(*root != NULL);
 	assert((*root)->right != NULL);
 	// Should rotate left only when the root node is balanced toward the right
-	assert((*root)->balance >= RIGHT);
+	// assert(RIGHT <= (*root)->balance);
+	// Should rotate left only when the tree is right-right or right-balanced
+	// assert(BALANCED <= (*root)->right->balance);
 
 	// The prior_right node will eventually be saved in root's current position
 	struct avl_node *prior_right = (*root)->right;
+
+	// Calculate balances first
+	// if (prior_right->balance == BALANCED) {
+	// 	(*root)->balance += LEFT;
+	// 	prior_right->balance += LEFT;
+	// } else if (RIGHT < prior_right->balance) {
+	// 	(*root)->balance = LEFT;
+	// 	prior_right->balance = BALANCED;
+	// } else if (RIGHT < (*root)->balance) {
+	// 	(*root)->balance = BALANCED;
+	// 	prior_right->balance = BALANCED;
+	// } else {
+	// 	(*root)->balance += 2 * LEFT;
+	// 	prior_right += 2 * LEFT;
+	// }
 
 	// Everything to the left of prior_right is attached to root's right
 	(*root)->right = prior_right->left;
 
 	// Calculate root's new balance assuming the tree has been regularly balanced
-	(*root)->balance = (LEFT * ((*root)->left != NULL)) + (RIGHT * ((*root)->right != NULL));
+	// (*root)->balance = (LEFT * ((*root)->left != NULL)) + (RIGHT * ((*root)->right != NULL));
+	// if ((((*root)->right == NULL) == ((*root)->left == NULL)) && RIGHT < (*root)->balance) {
+	// 	(*root)->balance += 2 * LEFT;
+	// } else {
+	// 	(*root)->balance += LEFT;
+	// }
 
 	// prior_right's left is now the old root
 	prior_right->left = *root;
-	prior_right->balance += LEFT;
+	// prior_right->balance += LEFT;
 
 	// prior_right is the new root
 	*root = prior_right;
@@ -65,20 +87,42 @@ void _rotate_right(struct avl_node **root) {
 	assert(*root != NULL);
 	assert((*root)->left != NULL);
 	// Should rotate right only when the root node is balanced toward the left
-	assert((*root)->balance <= LEFT);
+	// assert((*root)->balance <= LEFT);
+	// Should rotate right only when the tree is left-left or left-balanced
+	// assert((*root)->left->balance <= BALANCED);
 
 	// The prior_left node will eventually be saved in root's current position
 	struct avl_node *prior_left = (*root)->left;
+
+	// Calculate balances first
+	// if (prior_left->balance == BALANCED) {
+	// 	(*root)->balance += RIGHT;
+	// 	prior_left->balance += RIGHT;
+	// } else if (prior_left->balance < LEFT) {
+	// 	(*root)->balance = RIGHT;
+	// 	prior_left->balance = BALANCED;
+	// } else if ((*root)->balance < LEFT) {
+	// 	(*root)->balance = BALANCED;
+	// 	prior_left->balance = BALANCED;
+	// } else {
+	// 	(*root)->balance += 2 * RIGHT;
+	// 	prior_left->balance += 2 * RIGHT;
+	// }
 
 	// Everything to the right of prior_left is attached to root's left
 	(*root)->left = prior_left->right;
 
 	// Calculate root's new balance assuming the tree has been regularly balanced
-	(*root)->balance = (LEFT * ((*root)->left != NULL)) + (RIGHT * ((*root)->right != NULL));
+	// (*root)->balance = (LEFT * ((*root)->left != NULL)) + (RIGHT * ((*root)->right != NULL));
+	// if ((((*root)->right == NULL) == ((*root)->left == NULL)) && (*root)->balance < LEFT) {
+	// 	(*root)->balance += 2 * RIGHT;
+	// } else {
+	// 	(*root)->balance += RIGHT;
+	// }
 
 	// prior_left's left is now the old root
 	prior_left->right = *root;
-	prior_left->balance += RIGHT;
+	// prior_left->balance += RIGHT;
 
 	// prior_left is the new root
 	*root = prior_left;
@@ -87,13 +131,51 @@ void _rotate_right(struct avl_node **root) {
 void _balance_left(struct avl_node **node, bool *decrease) {
 	assert(node != NULL);
 	assert(*node != NULL);
+	// avl_node_print(*node);
 	assert((*node)->left != NULL);
 
-	if ((*node)->left->balance == RIGHT) {
-		_rotate_left(&(*node)->left);
-	} else if ((*node)->left->balance == BALANCED) {
-		// The height of the subtree will remain the same after rotating. Occurs only during removals.
-		*decrease = false;
+	switch ((*node)->left->balance) {
+		case LEFT:
+			// left-left tree
+			(*node)->balance = BALANCED;
+			(*node)->left->balance = BALANCED;
+			break;
+
+		case RIGHT:
+			// left-right-tree
+			assert((*node)->left->right != NULL);
+			switch ((*node)->left->right->balance) {
+				case BALANCED:
+					// left-right-balanced tree
+					(*node)->balance = BALANCED;
+					(*node)->left->balance = BALANCED;
+					break;
+
+				case LEFT:
+					// left-right-left tree
+					(*node)->balance = RIGHT;
+					(*node)->left->balance = BALANCED;
+					break;
+
+				case RIGHT:
+					// left-right-right tree
+					(*node)->balance = BALANCED;
+					(*node)->left->balance = LEFT;
+					break;
+			}
+
+			(*node)->left->right->balance = BALANCED;
+
+			_rotate_left(&(*node)->left);
+			break;
+
+		case BALANCED:
+			// left-balanced tree
+			(*node)->balance = LEFT;
+			(*node)->left->balance = RIGHT;
+			// The height of the subtree will remain the same after rotating. Occurs only during removals.
+			*decrease = false;
+			break;
 	}
 
 	_rotate_right(node);
@@ -104,11 +186,48 @@ void _balance_right(struct avl_node **node, bool *decrease) {
 	assert(*node != NULL);
 	assert((*node)->right != NULL);
 
-	if ((*node)->right->balance == LEFT) {
-		_rotate_right(&(*node)->right);
-	} else if ((*node)->right->balance == BALANCED) {
-		// The height of the subtree will remain the same after rotating. Occurs only during removals.
-		*decrease = false;
+	switch ((*node)->right->balance) {
+		case RIGHT:
+			// right-right tree
+			(*node)->balance = BALANCED;
+			(*node)->right->balance = BALANCED;
+			break;
+
+		case LEFT:
+			// right-left-tree
+			assert((*node)->right->left != NULL);
+			switch ((*node)->right->left->balance) {
+				case BALANCED:
+					// right-left-balanced-tree
+					(*node)->balance = BALANCED;
+					(*node)->right->balance = BALANCED;
+					break;
+
+				case RIGHT:
+					// right-left-right tree
+					(*node)->balance = LEFT;
+					(*node)->right->balance = BALANCED;
+					break;
+
+				case LEFT:
+					// right-left-left tree
+					(*node)->balance = BALANCED;
+					(*node)->right->balance = RIGHT;
+					break;
+			}
+
+			(*node)->right->left->balance = BALANCED;
+
+			_rotate_right(&(*node)->right);
+			break;
+
+		case BALANCED:
+			// right-balanced tree
+			(*node)->balance = RIGHT;
+			(*node)->right->balance = LEFT;
+			// The height of the subtree will remain the same after rotating. Occurs only during removals.
+			*decrease = false;
+			break;
 	}
 
 	_rotate_left(node);
@@ -141,8 +260,10 @@ int _add_helper(
 	} else {
 		int direction = cmp_func(value, (*root)->value);
 
+		// printf("\tdirection: %d\n", direction);
+
 		int did_add;
-		if (direction < 0) {
+		if (direction <= LEFT) {
 			// Add on left
 			did_add = _add_helper(&(*root)->left, value, data, cmp_func, increase);
 			if (did_add < 0) {
@@ -166,7 +287,7 @@ int _add_helper(
 			}
 
 			return did_add;
-		} else if (0 < direction) {
+		} else if (RIGHT <= direction) {
 			// Add on right
 			did_add = _add_helper(&(*root)->right, value, data, cmp_func, increase);
 			if (did_add < 0) {
@@ -183,7 +304,7 @@ int _add_helper(
 					*increase = false;
 				}
 				// The overall height of the tree increased out of bounds on the right side
-				else if ((*root)->balance > RIGHT) {
+				else if (RIGHT < (*root)->balance) {
 					_balance_right(root, NULL);
 					*increase = false;
 				}
@@ -200,7 +321,8 @@ int _add_helper(
 int avl_tree_add(struct avl_tree *tree, void const *new_value, void const *new_data) {
 	assert(tree != NULL);
 
-	bool increase = true;
+	// We assume that new_value already exists in the tree
+	bool increase = false;
 	return _add_helper(&(tree->root), new_value, new_data, tree->cmp_func, &increase);
 }
 
@@ -255,14 +377,17 @@ int _remove_helper(
 
 		int did_remove;
 
-		if (direction < 0) {
+		if (direction <= LEFT) {
 			// Remove from left side
 			did_remove =
 					_remove_helper(&(*root)->left, search_value, node_value, node_data, cmp_func, decrease);
 
 			if (*decrease) {
+				// printf("RIGHT for node:\t");
+				// avl_node_print(*root);
 				// Since a node was removed on the left, the right side is now longer
 				(*root)->balance += RIGHT;
+				// printf("new balance: %d\n", (*root)->balance);
 
 				// If the overall height of this node did not decrease
 				if ((*root)->balance == RIGHT) {
@@ -270,19 +395,22 @@ int _remove_helper(
 				}
 				// If the overall height of this node decreased out of bounds on the right side
 				else if (RIGHT < (*root)->balance) {
-					_balance_left(root, decrease);
+					_balance_right(root, decrease);
 				}
 			}
 
 			return did_remove;
-		} else if (0 < direction) {
+		} else if (RIGHT <= direction) {
 			// Remove from right side
 			did_remove =
 					_remove_helper(&(*root)->right, search_value, node_value, node_data, cmp_func, decrease);
 
 			if (*decrease) {
+				// printf("LEFT for node:\t");
+				// avl_node_print(*root);
 				// Since a node was removed on the right, the left side is now longer
 				(*root)->balance += LEFT;
+				// printf("new balance: %d\n", (*root)->balance);
 
 				// If the overall height of this node did not decrease
 				if ((*root)->balance == LEFT) {
@@ -290,7 +418,7 @@ int _remove_helper(
 				}
 				// If the overall height of this node decreased out of bounds on the left side
 				else if ((*root)->balance < LEFT) {
-					_balance_right(root, decrease);
+					_balance_left(root, decrease);
 				}
 			}
 
@@ -370,13 +498,14 @@ int avl_tree_remove(
 	assert(node_value != NULL);
 	assert(node_data != NULL);
 
+	// We assume that the search_value does not appear in the tree
 	bool decrease = false;
 	return _remove_helper(
 			&tree->root, search_value, node_value, node_data, tree->cmp_func, &decrease);
 }
 
-int _traverse_helper(
-		struct avl_node *root, int (*preorder_func)(struct avl_node const *node, void *arg),
+int avl_subtree_traverse(
+		struct avl_node const *root, int (*preorder_func)(struct avl_node const *node, void *arg),
 		void *preorder_arg, int (*inorder_func)(struct avl_node const *node, void *arg),
 		void *inorder_arg, int (*postorder_func)(struct avl_node const *node, void *arg),
 		void *postorder_arg) {
@@ -395,7 +524,7 @@ int _traverse_helper(
 	}
 
 	// Go down the left branch
-	rc = _traverse_helper(
+	rc = avl_subtree_traverse(
 			root->left, preorder_func, preorder_arg, inorder_func, inorder_arg, postorder_func,
 			postorder_arg);
 	if (rc <= -1) {
@@ -411,7 +540,7 @@ int _traverse_helper(
 	}
 
 	// Go down the right branch
-	rc = _traverse_helper(
+	rc = avl_subtree_traverse(
 			root->right, preorder_func, preorder_arg, inorder_func, inorder_arg, postorder_func,
 			postorder_arg);
 	if (rc <= -1) {
@@ -435,7 +564,41 @@ int avl_tree_traverse(
 		void *inorder_arg, int (*postorder_func)(struct avl_node const *node, void *arg),
 		void *postorder_arg) {
 	assert(tree != NULL);
-	return _traverse_helper(
+	return avl_subtree_traverse(
 			tree->root, preorder_func, preorder_arg, inorder_func, inorder_arg, postorder_func,
 			postorder_arg);
+}
+
+void avl_node_print(struct avl_node const *node) {
+	printf("(v: %p, d: %p, b: %d)\n", node->value, node->data, node->balance);
+}
+
+int _print_tree_preorder(struct avl_node const *node, void *depth_p) {
+	int64_t depth = *(int64_t *)depth_p;
+
+	for (int64_t d = 0; d < depth; ++d) {
+		putchar('\t');
+	}
+	avl_node_print(node);
+
+	*(int64_t *)depth_p = depth + 1;
+
+	return 0;
+}
+
+int _print_tree_postorder(struct avl_node const *node __attribute__((unused)), void *depth_p) {
+	int64_t depth = *(int64_t *)depth_p;
+	*(int64_t *)depth_p = depth - 1;
+
+	return 0;
+}
+
+int avl_subtree_print(struct avl_node const *root) {
+	int64_t depth = 0;
+	return avl_subtree_traverse(
+			root, _print_tree_preorder, &depth, NULL, NULL, _print_tree_postorder, &depth);
+}
+
+int avl_tree_print(struct avl_tree const *tree) {
+	return avl_subtree_print(tree->root);
 }

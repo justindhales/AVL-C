@@ -4,6 +4,8 @@ enable_testing()
 
 find_package(Check REQUIRED)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-variable")
+
 include_directories(. ../src)
 
 set(test_LIBS ${LIBS} avl ${CHECK_LIBRARIES})

@@ -24,10 +24,22 @@ int avl_tree_remove(
 		struct avl_tree *tree, void const *search_value, void const **node_value,
 		void const **node_data);
 
+int avl_subtree_traverse(
+		struct avl_node const *root, int (*preorder_func)(struct avl_node const *node, void *arg),
+		void *preorder_arg, int (*inorder_func)(struct avl_node const *node, void *arg),
+		void *inorder_arg, int (*postorder_func)(struct avl_node const *node, void *arg),
+		void *postorder_arg);
+
 int avl_tree_traverse(
 		struct avl_tree const *tree, int (*preorder_func)(struct avl_node const *node, void *arg),
 		void *preorder_arg, int (*inorder_func)(struct avl_node const *node, void *arg),
 		void *inorder_arg, int (*postorder_func)(struct avl_node const *node, void *arg),
 		void *postorder_arg);
+
+void avl_node_print(struct avl_node const *node);
+
+int avl_subtree_print(struct avl_node const *root);
+
+int avl_tree_print(struct avl_tree const *tree);
 
 #endif  // SRC_AVL_H

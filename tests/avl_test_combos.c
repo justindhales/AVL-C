@@ -1,10 +1,14 @@
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
 #include "avl_test_utils.h"
 
+#define NUM_VALUES 100000
+
 START_TEST(test_balance_right_right) {
+	printf("test balance right-right\n");
 	struct avl_tree *tree = new_tree();
 
 	int rc;
@@ -44,6 +48,7 @@ START_TEST(test_balance_right_right) {
 END_TEST
 
 START_TEST(test_balance_right_left) {
+	printf("test balance right-left\n");
 	struct avl_tree *tree = new_tree();
 
 	int rc;
@@ -51,11 +56,17 @@ START_TEST(test_balance_right_left) {
 	rc = avl_tree_add(tree, (void *)0, (void *)1);
 	ck_assert(rc == true);
 
+	// avl_tree_print(tree);
+
 	rc = avl_tree_add(tree, (void *)4, (void *)5);
 	ck_assert(rc == true);
 
+	// avl_tree_print(tree);
+
 	rc = avl_tree_add(tree, (void *)2, (void *)3);
 	ck_assert(rc == true);
+
+	// avl_tree_print(tree);
 
 	struct avl_node *root = tree->root;
 	ck_assert(root != NULL);
@@ -83,6 +94,7 @@ START_TEST(test_balance_right_left) {
 END_TEST
 
 START_TEST(test_balance_right_right_right) {
+	printf("test balance right-right-right\n");
 	struct avl_tree *tree = new_tree();
 
 	int rc;
@@ -139,6 +151,7 @@ START_TEST(test_balance_right_right_right) {
 END_TEST
 
 START_TEST(test_balance_left_left) {
+	printf("test balance left-left\n");
 	struct avl_tree *tree = new_tree();
 
 	int rc;
@@ -178,6 +191,7 @@ START_TEST(test_balance_left_left) {
 END_TEST
 
 START_TEST(test_balance_left_right) {
+	printf("test balance left-right\n");
 	struct avl_tree *tree = new_tree();
 
 	int rc;
@@ -217,6 +231,7 @@ START_TEST(test_balance_left_right) {
 END_TEST
 
 START_TEST(test_balance_left_left_left) {
+	printf("test balance left-left-left\n");
 	struct avl_tree *tree = new_tree();
 
 	int rc;
@@ -272,16 +287,65 @@ START_TEST(test_balance_left_left_left) {
 
 END_TEST
 
-START_TEST(test_balance_random) {
-	srand(time(NULL));
+START_TEST(test_add_remove_all) {
+	printf("test add remove all\n");
 
-	// Create 1000 trees
-	for (int iterations = 0; iterations < 1000; ++iterations) {
+	// int rc;
+
+	struct avl_tree *tree;
+
+	int64_t values[NUM_VALUES];
+	int64_t v;
+	int v_i;
+
+	int i;
+
+	// Create 10 trees
+	for (i = 0; i < 10; ++i) {
+		tree = new_tree();
+
+		// Add NUM_VALUES random values
+
+		for (v_i = 0; v_i < NUM_VALUES; ++v_i) {
+			v = (int64_t)rand() % NUM_VALUES;
+			avl_tree_add(tree, (void *)v, (void *)(v + 1));
+			values[v_i] = v;
+		}
+
+		check_tree(tree);
+
+		void const *node_value;
+		void const *node_data;
+		// Remove those same NUM_VALUES values
+		for (v_i = 0; v_i < NUM_VALUES; ++v_i) {
+			avl_tree_remove(tree, (void *)values[v_i], &node_value, &node_data);
+		}
+
+		ck_assert(tree->root == NULL);
+
+		free_tree(tree);
+	}
+}
+
+END_TEST
+
+START_TEST(test_balance_random) {
+	printf("test balance random\n");
+
+	// Create 10 trees
+	for (int iteration = 0; iteration < 10; ++iteration) {
 		struct avl_tree *tree = new_tree();
 
-		// Of 1000 nodes (more or less) each
-		for (int num_node = 0; num_node < 1000; ++num_node) {
+		for (int64_t num_node = 0; num_node < NUM_VALUES; ++num_node) {
+			// Of completely (well, mostly) random values
 			avl_tree_add(tree, (void *)(int64_t)rand(), (void *)(int64_t)rand());
+		}
+
+		// Now randomly remove some nodes
+		void const *value;
+		void const *data;
+		for (int64_t num_node = 0; num_node < NUM_VALUES; ++num_node) {
+			avl_tree_remove(tree, (void *)(int64_t)rand(), &value, &data);
 		}
 
 		check_tree(tree);
@@ -305,6 +369,8 @@ Suite *test_suite() {
 	tcase_add_test(tcase, test_balance_left_right);
 	tcase_add_test(tcase, test_balance_left_left_left);
 
+	tcase_add_test(tcase, test_add_remove_all);
+
 	tcase_add_test(tcase, test_balance_random);
 
 	suite_add_tcase(suite, tcase);
@@ -313,5 +379,6 @@ Suite *test_suite() {
 }
 
 int main() {
+	srand(time(NULL));
 	return run(test_suite());
 }
