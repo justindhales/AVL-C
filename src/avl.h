@@ -1,5 +1,5 @@
-#ifndef SRC_AVL_H
-#define SRC_AVL_H
+#ifndef AVL_C_SRC_AVL_H
+#define AVL_C_SRC_AVL_H
 
 #include <stdint.h>
 
@@ -42,4 +42,4 @@ int avl_subtree_print(struct avl_node const *root);
 
 int avl_tree_print(struct avl_tree const *tree);
 
-#endif  // SRC_AVL_H
+#endif  // AVL_C_SRC_AVL_H

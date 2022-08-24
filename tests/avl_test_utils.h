@@ -1,5 +1,5 @@
-#ifndef TESTS_AVL_TEST_UTILS_H
-#define TESTS_AVL_TEST_UTILS_H
+#ifndef AVL_C_TESTS_AVL_TEST_UTILS_H
+#define AVL_C_TESTS_AVL_TEST_UTILS_H
 
 #include <check.h>
 
@@ -25,4 +25,4 @@ void free_tree(struct avl_tree *tree);
 
 int run(Suite *suite);
 
-#endif  // TESTS_AVL_TEST_UTILS_H
+#endif  // AVL_C_TESTS_AVL_TEST_UTILS_H
