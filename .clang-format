@@ -15,7 +15,7 @@ AllowShortFunctionsOnASingleLine: Empty
 
 AlignAfterOpenBracket: AlwaysBreak
 
-UseTab: ForContinuationAndIndentation
+UseTab: ForIndentation
 IndentWidth: 2
 TabWidth: 2
 

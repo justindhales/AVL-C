@@ -4,7 +4,7 @@ enable_testing()
 
 find_package(Check REQUIRED)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-variable")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
 include_directories(. ../src)
 
