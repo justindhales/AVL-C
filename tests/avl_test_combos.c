@@ -58,7 +58,7 @@ void _test_remove(struct avl_tree *tree, void *v, bool success) {
 
 START_TEST(test_balance_right_right) {
 	printf("test balance right-right\n");
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	/*
 	0
@@ -87,7 +87,7 @@ END_TEST
 
 START_TEST(test_balance_full_right_right) {
 	printf("test balance full right-right\n");
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	/*
 	  2
@@ -143,7 +143,7 @@ END_TEST
 
 START_TEST(test_balance_right_left) {
 	printf("test balance right-left\n");
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	/*
 	0
@@ -170,7 +170,7 @@ START_TEST(test_balance_right_left) {
 
 START_TEST(test_balance_full_right_left) {
 	printf("test balance full right-left\n");
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	/*
 	  2
@@ -226,7 +226,7 @@ END_TEST
 
 START_TEST(test_balance_right_right_right) {
 	printf("test balance right-right-right\n");
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	/*
 	0
@@ -276,7 +276,7 @@ END_TEST
 
 START_TEST(test_balance_left_left) {
 	printf("test balance left-left\n");
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	/*
 	    4
@@ -305,7 +305,7 @@ END_TEST
 
 START_TEST(test_balance_full_left_left) {
 	printf("test balance full left-left\n");
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	/*
 	      8
@@ -361,7 +361,7 @@ END_TEST
 
 START_TEST(test_balance_left_right) {
 	printf("test balance left-right\n");
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	/*
 	    4
@@ -384,7 +384,7 @@ END_TEST
 
 START_TEST(test_balance_full_left_right) {
 	printf("test balance full left-right\n");
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	/*
 	      8
@@ -440,7 +440,7 @@ END_TEST
 
 START_TEST(test_balance_left_left_left) {
 	printf("test balance left-left-left\n");
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	/*
 	        8
@@ -503,7 +503,7 @@ START_TEST(test_add_remove_all) {
 
 	// Create 10 trees
 	for (i = 0; i < 10; ++i) {
-		tree = new_tree();
+		tree = create_tree();
 
 		// Add NUM_VALUES random values
 
@@ -535,7 +535,7 @@ START_TEST(test_balance_random) {
 
 	// Create 10 trees
 	for (int iteration = 0; iteration < 10; ++iteration) {
-		struct avl_tree *tree = new_tree();
+		struct avl_tree *tree = create_tree();
 
 		for (int64_t num_node = 0; num_node < NUM_VALUES; ++num_node) {
 			// Of completely (well, mostly) random values

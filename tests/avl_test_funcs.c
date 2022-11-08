@@ -4,8 +4,7 @@
 #include "avl_test_utils.h"
 
 START_TEST(test_init) {
-	struct avl_tree *tree = malloc(sizeof(struct avl_tree));
-	avl_tree_init(tree, int64_t_cmp);
+	struct avl_tree *tree = create_tree();
 
 	ck_assert(tree->root == NULL);
 	ck_assert(tree->cmp_func == int64_t_cmp);
@@ -16,7 +15,7 @@ START_TEST(test_init) {
 END_TEST
 
 START_TEST(test_add) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -38,7 +37,7 @@ START_TEST(test_add) {
 END_TEST
 
 START_TEST(test_add_double) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -60,7 +59,7 @@ START_TEST(test_add_double) {
 }
 
 START_TEST(test_add_right) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -90,7 +89,7 @@ START_TEST(test_add_right) {
 END_TEST
 
 START_TEST(test_add_right_double) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -123,7 +122,7 @@ START_TEST(test_add_right_double) {
 END_TEST
 
 START_TEST(test_add_left) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -153,7 +152,7 @@ START_TEST(test_add_left) {
 END_TEST
 
 START_TEST(test_add_left_double) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -186,7 +185,7 @@ START_TEST(test_add_left_double) {
 END_TEST
 
 START_TEST(test_remove) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -208,7 +207,7 @@ START_TEST(test_remove) {
 END_TEST
 
 START_TEST(test_remove_double) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -239,7 +238,7 @@ START_TEST(test_remove_double) {
 END_TEST
 
 START_TEST(test_remove_right) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -268,7 +267,7 @@ START_TEST(test_remove_right) {
 END_TEST
 
 START_TEST(test_remove_right_double) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -307,7 +306,7 @@ START_TEST(test_remove_right_double) {
 END_TEST
 
 START_TEST(test_remove_left) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -336,7 +335,7 @@ START_TEST(test_remove_left) {
 END_TEST
 
 START_TEST(test_remove_left_double) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -375,7 +374,7 @@ START_TEST(test_remove_left_double) {
 END_TEST
 
 START_TEST(test_remove_center) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -417,7 +416,7 @@ START_TEST(test_remove_center) {
 END_TEST
 
 START_TEST(test_get) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 
@@ -437,7 +436,7 @@ START_TEST(test_get) {
 END_TEST
 
 START_TEST(test_get_fail) {
-	struct avl_tree *tree = new_tree();
+	struct avl_tree *tree = create_tree();
 
 	int rc;
 

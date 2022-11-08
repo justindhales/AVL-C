@@ -7,9 +7,9 @@ int int64_t_cmp(void const *new_value, void const *node_value) {
 	return (int64_t)new_value - (int64_t)node_value;
 }
 
-struct avl_tree *new_tree() {
-	struct avl_tree *tree = malloc(sizeof(struct avl_tree));
-	avl_tree_init(tree, int64_t_cmp);
+struct avl_tree *create_tree() {
+	struct avl_tree *tree = NULL;
+	avl_tree_create(&tree, int64_t_cmp);
 
 	return tree;
 }
@@ -41,8 +41,7 @@ int _free_node(struct avl_node const *node, void *arg __attribute__((unused))) {
 }
 
 void free_tree(struct avl_tree *tree) {
-	avl_tree_traverse(tree, NULL, NULL, NULL, NULL, _free_node, NULL);
-	free(tree);
+	avl_tree_free(&tree, _free_node, NULL);
 }
 
 int run(Suite *suite) {
