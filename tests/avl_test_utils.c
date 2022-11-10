@@ -18,7 +18,7 @@ int _check_node(struct avl_node const *node, void *previous_value) {
 	// Make sure the ordering is correct
 
 	// The 64 bit value is stored inside the void * in the node, but we're passing around a pointer to
-	// a malloc()'d int64_t for comparison.
+	// a int64_t for comparison.
 	ck_assert(*(int64_t *)previous_value < (int64_t)node->value);
 	*(int64_t *)previous_value = (int64_t)node->value;
 
