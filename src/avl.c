@@ -2,36 +2,75 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <semaphore.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+enum weight { LEFT = -1, BALANCED = 0, RIGHT = 1 };
 
 struct avl_node {
 	void const *value;
 	void const *data;
 	struct avl_node *left;
 	struct avl_node *right;
-	int8_t balance;
+	int32_t balance;
 };
-
-enum weight { LEFT = -1, BALANCED = 0, RIGHT = 1 };
 
 int avl_tree_create(
     struct avl_tree **tree, int (*cmp_func)(void const *new_value, void const *node_value)) {
 	assert(tree != NULL);
 	assert(*tree == NULL);
 
+	int rc;
+
 	*tree = malloc(sizeof(**tree));
 	if (*tree == NULL) {
 		perror("malloc(sizeof(**tree))");
-		return -errno;
+		rc = -errno;
+		goto finish;
 	}
 
 	(*tree)->root = NULL;
 	(*tree)->cmp_func = cmp_func;
+	(*tree)->lock = malloc(sizeof(*(*tree)->lock));
+	if ((*tree)->lock == NULL) {
+		rc = -errno;
+		goto finish;
+	}
+	rc = sem_init((*tree)->lock, false, 1);
+	if (rc < 0) {
+		rc = -errno;
+		goto finish;
+	}
 
-	return 0;
+finish:
+	if (rc < 0 && *tree != NULL) {
+		avl_tree_free(tree, NULL, NULL);
+	}
+
+	return rc;
+}
+
+void avl_tree_free(
+    struct avl_tree **tree, int (*free_node_func)(struct avl_node const *node, void *arg),
+    void *free_arg) {
+	assert(tree != NULL);
+	assert(*tree != NULL);
+
+	// Free each node of the tree
+	int rc = avl_tree_traverse(*tree, NULL, NULL, NULL, NULL, free_node_func, free_arg);
+	assert(rc == 0);
+
+	// Destroy the semaphore lock and free the associated memory
+	if ((*tree)->lock != NULL) {
+		sem_destroy((*tree)->lock);
+		free((*tree)->lock);
+	}
+
+	free(*tree);
+	*tree = NULL;
 }
 
 void const *avl_node_value(struct avl_node const *node) {
@@ -42,20 +81,6 @@ void const *avl_node_value(struct avl_node const *node) {
 void const *avl_node_data(struct avl_node const *node) {
 	assert(node != NULL);
 	return node->data;
-}
-
-void avl_tree_free(
-    struct avl_tree **tree, int (*free_node_func)(struct avl_node const *node, void *arg),
-    void *free_arg) {
-	assert(tree != NULL);
-	assert(*tree != NULL);
-	assert(free_node_func != NULL);
-
-	int rc = avl_tree_traverse(*tree, NULL, NULL, NULL, NULL, free_node_func, free_arg);
-	assert(rc == 0);
-
-	free(*tree);
-	*tree = NULL;
 }
 
 void _rotate_left(struct avl_node **root) {
@@ -289,7 +314,13 @@ int avl_tree_add(struct avl_tree *tree, void const *new_value, void const *new_d
 
 	// We assume that new_value already exists in the tree
 	bool increase = false;
-	return _add_helper(&(tree->root), new_value, new_data, tree->cmp_func, &increase);
+
+	// Obtain exclusive lock over the tree while adding data
+	sem_wait(tree->lock);
+	int rc = _add_helper(&(tree->root), new_value, new_data, tree->cmp_func, &increase);
+	sem_post(tree->lock);
+
+	return rc;
 }
 
 int _get_helper(
@@ -322,7 +353,12 @@ int avl_tree_get(struct avl_tree const *tree, void const *search_value, void con
 	assert(tree != NULL);
 	assert(node_data != NULL);
 
-	return _get_helper((tree)->root, search_value, node_data, tree->cmp_func);
+	// Obtain exclusive lock over the tree while getting data
+	sem_wait(tree->lock);
+	int rc = _get_helper((tree)->root, search_value, node_data, tree->cmp_func);
+	sem_post(tree->lock);
+
+	return rc;
 }
 
 int _remove_helper(
@@ -466,11 +502,16 @@ int avl_tree_remove(
 
 	// We assume that the search_value does not appear in the tree
 	bool decrease = false;
-	return _remove_helper(
-	    &tree->root, search_value, node_value, node_data, tree->cmp_func, &decrease);
+
+	// Obtain exclusive lock while removing data
+	sem_wait(tree->lock);
+	int rc =
+	    _remove_helper(&tree->root, search_value, node_value, node_data, tree->cmp_func, &decrease);
+	sem_post(tree->lock);
+	return rc;
 }
 
-int avl_subtree_traverse(
+int _avl_subtree_traverse(
     struct avl_node const *root, int (*preorder_func)(struct avl_node const *node, void *arg),
     void *preorder_arg, int (*inorder_func)(struct avl_node const *node, void *arg),
     void *inorder_arg, int (*postorder_func)(struct avl_node const *node, void *arg),
@@ -490,7 +531,7 @@ int avl_subtree_traverse(
 	}
 
 	// Go down the left branch
-	rc = avl_subtree_traverse(
+	rc = _avl_subtree_traverse(
 	    root->left, preorder_func, preorder_arg, inorder_func, inorder_arg, postorder_func,
 	    postorder_arg);
 	if (rc <= -1) {
@@ -506,7 +547,7 @@ int avl_subtree_traverse(
 	}
 
 	// Go down the right branch
-	rc = avl_subtree_traverse(
+	rc = _avl_subtree_traverse(
 	    root->right, preorder_func, preorder_arg, inorder_func, inorder_arg, postorder_func,
 	    postorder_arg);
 	if (rc <= -1) {
@@ -530,16 +571,20 @@ int avl_tree_traverse(
     void *inorder_arg, int (*postorder_func)(struct avl_node const *node, void *arg),
     void *postorder_arg) {
 	assert(tree != NULL);
-	return avl_subtree_traverse(
+
+	sem_wait(tree->lock);
+	int rc = _avl_subtree_traverse(
 	    tree->root, preorder_func, preorder_arg, inorder_func, inorder_arg, postorder_func,
 	    postorder_arg);
+	sem_post(tree->lock);
+	return rc;
 }
 
 void avl_node_print(struct avl_node const *node) {
 	printf("(v: %p, d: %p, b: %d)\n", node->value, node->data, node->balance);
 }
 
-int _print_tree_preorder(struct avl_node const *node, void *depth_p) {
+int _print_node_preorder(struct avl_node const *node, void *depth_p) {
 	int64_t depth = *(int64_t *)depth_p;
 
 	for (int64_t d = 0; d < depth; ++d) {
@@ -552,19 +597,17 @@ int _print_tree_preorder(struct avl_node const *node, void *depth_p) {
 	return 0;
 }
 
-int _print_tree_postorder(struct avl_node const *node __attribute__((unused)), void *depth_p) {
+int _print_node_postorder(struct avl_node const *node __attribute__((unused)), void *depth_p) {
 	int64_t depth = *(int64_t *)depth_p;
 	*(int64_t *)depth_p = depth - 1;
 
 	return 0;
 }
 
-int avl_subtree_print(struct avl_node const *root) {
-	int64_t depth = 0;
-	return avl_subtree_traverse(
-	    root, _print_tree_preorder, &depth, NULL, NULL, _print_tree_postorder, &depth);
-}
-
 int avl_tree_print(struct avl_tree const *tree) {
-	return avl_subtree_print(tree->root);
+	assert(tree != NULL);
+
+	int64_t depth = 0;
+	return avl_tree_traverse(
+	    tree, _print_node_preorder, &depth, NULL, NULL, _print_node_postorder, &depth);
 }
